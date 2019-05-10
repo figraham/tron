@@ -1,4 +1,13 @@
-import { OutputTerminal } from 'terminaltxt';
+import { Loop } from 'terminaltxt';
+import io from 'socket.io-client';
 
-const output: OutputTerminal = new OutputTerminal();
-output.write('hello');
+const loop: Loop = new Loop(init, update);
+let socket: SocketIOClient.Socket;
+
+function init(): void {
+  socket = io.connect('http://localhost:3000');
+}
+
+function update(): void {
+
+}
