@@ -1,0 +1,19 @@
+{
+  "name": "tron",
+  "version": "0.0.0",
+  "description": "Clone of tron using TerminalTXT and socket.io.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fi Graham",
+  "license": "MIT",
+  "devDependencies": {
+    "parcel": "^1.12.3"
+  },
+  "dependencies": {
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0",
+    "terminaltxt": "0.0.7"
+  }
+}
