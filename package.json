@@ -4,12 +4,17 @@
   "description": "Clone of tron using TerminalTXT and socket.io.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server:build": "rm -rf ./server/build"
   },
   "author": "Fi Graham",
   "license": "MIT",
   "devDependencies": {
-    "parcel": "^1.12.3"
+    "@types/express": "^4.16.1",
+    "@types/socket.io": "^2.1.2",
+    "@types/socket.io-client": "^1.4.32",
+    "parcel": "^1.12.3",
+    "typescript": "^3.4.5"
   },
   "dependencies": {
     "express": "^4.16.4",
