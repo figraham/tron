@@ -1,3 +1,3 @@
-const express = require('express');
+import * as express from 'express';
 
-const a: number = 5;
+console.log('-- Server Started --');

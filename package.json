@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server:build": "rm -rf ./server/build"
+    "server": "npm run server:start",
+    "server:start": "npm run server:build && npm run server:run",
+    "server:build": "rm -rf ./server/build && tsc -p ./server",
+    "server:run": "node ./server/build/index.js"
   },
   "author": "Fi Graham",
   "license": "MIT",
