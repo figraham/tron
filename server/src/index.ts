@@ -25,7 +25,13 @@ const io = require('socket.io')(server);
 io.sockets.on('connection', (socket: SocketIO.Socket) => {
   console.log(`${socket.id} is connected`);
   socket.emit('established', {id: socket.id});
-  
+
+  socket.on('mkroom', (message) => {
+    console.log(message);
+    socket.join(message.roomName);
+    io.to(message.roomName).emit('room-created', {created: true});
+  });
+
   socket.on('disconnect', () => {
     console.log(`${socket.id} was disconnected`);
   });

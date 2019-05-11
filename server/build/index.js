@@ -14,6 +14,11 @@ var io = require('socket.io')(server);
 io.sockets.on('connection', function (socket) {
     console.log(socket.id + " is connected");
     socket.emit('established', { id: socket.id });
+    socket.on('mkroom', function (message) {
+        console.log(message);
+        socket.join(message.roomName);
+        io.to(message.roomName).emit('room-created', { created: true });
+    });
     socket.on('disconnect', function () {
         console.log(socket.id + " was disconnected");
     });
