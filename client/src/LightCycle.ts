@@ -79,10 +79,12 @@ export class LightCycle {
   }
 
   public render(term: GraphicsTerminal): void {
+    term.fillColor('lightgrey');
     if (this.destroyed) {
       return;
     }
     term.setCell(this.getCharacter(), this.position.x, this.position.y);
+    term.setCellColor('red', this.position.x, this.position.y);
     while(this.direction.length > 1) {
       this.direction.shift();
     }
@@ -94,29 +96,28 @@ export class LightCycle {
     if (this.direction.length < 1) {
       throw new Error(`LightCycle direction array is empty! ${JSON.stringify(this)}`);
     }
-    if (this.direction.length === 1) {
-      if (this.direction[0] === Direction.UP || this.direction[0] === Direction.DOWN) {
-        return '│';
-      }
-      return '─';
+    if (this.direction.length > 1) {
+      if (
+        this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.UP    ||
+        this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.RIGHT
+      ) { return '└'; }
+      else if (
+        this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.UP    ||
+        this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.LEFT
+      ) { return '┘'; }
+      else if (
+        this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.DOWN  ||
+        this.direction[0] === Direction.UP    && this.direction[1] === Direction.RIGHT
+      ) { return '┌'; }
+      else if (
+        this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.DOWN  ||
+        this.direction[0] === Direction.UP    && this.direction[1] === Direction.LEFT
+      ) { return '┐'; }
     }
-    if (
-      this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.UP    ||
-      this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.RIGHT
-    ) { return '└'; }
-    else if (
-      this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.UP    ||
-      this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.LEFT
-    ) { return '┘'; }
-    else if (
-      this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.DOWN  ||
-      this.direction[0] === Direction.UP    && this.direction[1] === Direction.RIGHT
-    ) { return '┌'; }
-    else if (
-      this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.DOWN  ||
-      this.direction[0] === Direction.UP    && this.direction[1] === Direction.LEFT
-    ) { return '┐'; }
-    return '0';
+    if (this.direction[0] === Direction.UP || this.direction[0] === Direction.DOWN) {
+      return '│';
+    }
+    return '─';
   }
 
 }
