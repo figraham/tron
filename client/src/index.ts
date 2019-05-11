@@ -38,5 +38,5 @@ function init(): void {
 function update(): void {
   cycle.checkBoundaries(0, 0, WIDTH, HEIGHT);
   cycle.render(term);
-  console.log(cycle.path[cycle.path.length -1]);
+  console.log(cycle.position);
 }

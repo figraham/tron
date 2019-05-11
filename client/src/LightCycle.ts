@@ -3,15 +3,13 @@ import { Direction } from "./Direction";
 
 export class LightCycle {
 
-  public path: Vector2[];
+  public position: Vector2;
 
-  public nextDirection: Direction | null;
-  public direction: Direction;
-  public previousDirection: Direction;
+  protected direction: Direction[];
   
   public destroyed: boolean;
 
-  constructor(startPosition: Vector2 = new Vector2(), direction: Direction = Direction.RIGHT) {
+  constructor(position: Vector2 = new Vector2(), direction: Direction = Direction.RIGHT) {
 
     // bindings
     this.goUp    = this.goUp.bind(this);
@@ -20,141 +18,115 @@ export class LightCycle {
     this.goRight = this.goRight.bind(this);
 
     // initialization
-    this.nextDirection = null;
-    this.direction = direction;
-    this.previousDirection = this.direction;
+    this.direction = [];
+    this.direction.push(direction);
     this.destroyed = false;
-
-    this.path = [];
-    this.path.push(startPosition);
+    this.position = position;
 
   }
 
   public goUp(): void {
-    if (this.direction !== Direction.DOWN) {
-      this.nextDirection = Direction.UP;
+    if (this.direction[this.direction.length - 1] !== Direction.DOWN) {
+      this.direction.push(Direction.UP);
     }
   }
 
   public goDown(): void {
-    if (this.direction !== Direction.UP) {
-      this.nextDirection = Direction.DOWN;
+    if (this.direction[this.direction.length - 1] !== Direction.UP) {
+      this.direction.push(Direction.DOWN);
     }
   }
 
   public goLeft(): void {
-    if (this.direction !== Direction.RIGHT) {
-      this.nextDirection = Direction.LEFT;
+    if (this.direction[this.direction.length - 1] !== Direction.RIGHT) {
+      this.direction.push(Direction.LEFT);
     }
   }
 
   public goRight(): void {
-    if (this.direction !== Direction.LEFT) {
-      this.nextDirection = Direction.RIGHT;
+    if (this.direction[this.direction.length - 1] !== Direction.LEFT) {
+      this.direction.push(Direction.RIGHT);
     }
   }
 
-  public toString(): string {
-    return `LightCycle - Direction: ${this.direction} - Path: ${JSON.stringify(this.path)}`;
-  }
-
-  public move(): void {
-    if (this.destroyed) {
-      return;
-    }
-    let next: Vector2 = Vector2.copy(this.path[this.path.length - 1]);
+  protected move(): void {
     // TODO change add when Vector2 is fixed.
-    switch (this.direction) {
+    switch (this.direction[0]) {
       case Direction.UP:
-        next.add(new Vector2(0, -1));
+        this.position.add(new Vector2(0, -1));
         break;
       case Direction.DOWN:
-        next.add(new Vector2(0, 1));
+        this.position.add(new Vector2(0, 1));
         break;
       case Direction.LEFT:
-        next.add(new Vector2(-1, 0));
+        this.position.add(new Vector2(-1, 0));
         break;
       case Direction.RIGHT:
-        next.add(new Vector2(1, 0));
+        this.position.add(new Vector2(1, 0));
         break;
     }
-    this.path.push(next);
   }
 
   public checkBoundaries(xMin: number, yMin: number, xMax: number, yMax: number): void {
     if (
-      this.path[this.path.length - 1].x <= xMin ||
-      this.path[this.path.length - 1].y <= yMin ||
-      this.path[this.path.length - 1].x >= xMax ||
-      this.path[this.path.length - 1].y >= yMax
+      this.position.x <= xMin ||
+      this.position.y <= yMin ||
+      this.position.x >= xMax ||
+      this.position.y >= yMax
     ) {
       this.destroyed = true;
     }
   }
 
   public render(term: GraphicsTerminal): void {
-    if (this.nextDirection !== null) {
-      this.previousDirection = this.direction;
-      this.direction = this.nextDirection;
-      this.nextDirection = null;
+    if (this.destroyed) {
+      return;
     }
-    let char = '0';
-    switch (this.direction) {
-      case Direction.UP:
-        switch (this.previousDirection) {
-          case Direction.UP:
-          char = '│';
-            break;
-          case Direction.LEFT:
-          char = '└';
-            break;
-          case Direction.RIGHT:
-          char = '┘';
-            break;
-        }
-        break;
-      case Direction.DOWN:
-        switch (this.previousDirection) {
-          case Direction.DOWN:
-          char = '│';
-            break;
-          case Direction.LEFT:
-          char = '┌';
-            break;
-          case Direction.RIGHT:
-          char = '┐';
-            break;
-        }
-        break;
-      case Direction.LEFT:
-        switch (this.previousDirection) {
-          case Direction.LEFT:
-          char = '─';
-            break;
-          case Direction.UP:
-          char = '┐';
-            break;
-          case Direction.DOWN:
-          char = '┘';
-            break;
-        }
-        break;
-      case Direction.RIGHT:
-        char = '─';
-        switch (this.previousDirection) {
-          case Direction.UP:
-          char = '┌';
-            break;
-          case Direction.DOWN:
-          char = '└';
-            break;
-        }
-        break;
+    term.setCell(this.getCharacter(), this.position.x, this.position.y);
+    while(this.direction.length > 1) {
+      this.direction.shift();
     }
-    term.setCell(char, this.path[this.path.length - 1].x, this.path[this.path.length - 1].y);
     term.update();
-    this.previousDirection = this.direction;
     this.move();
+  }
+
+  protected getCharacter(): string {
+    if (this.direction.length < 1) {
+      throw new Error(`LightCycle direction array is empty! ${JSON.stringify(this)}`);
+    }
+    if (this.direction.length === 1) {
+      switch(this.direction[0]) {
+      case Direction.UP:
+      case Direction.DOWN:
+        return '│';
+      case Direction.LEFT:
+      case Direction.RIGHT:
+        return '─';
+      }
+    }
+    if (
+      this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.UP    ||
+      this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.RIGHT
+    ) {
+      return '└';
+    } else if (
+      this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.UP    ||
+      this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.LEFT
+    ) {
+      return '┘';
+    }
+    else if (
+      this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.DOWN  ||
+      this.direction[0] === Direction.UP    && this.direction[1] === Direction.RIGHT
+    ) {
+      return '┌';
+    } else if (
+      this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.DOWN  ||
+      this.direction[0] === Direction.UP    && this.direction[1] === Direction.LEFT
+    ) {
+      return '┐';
+    }
+    return '0';
   }
 
 }
