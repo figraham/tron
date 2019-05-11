@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run server",
-    "client": "npm run client:build",
-    "client:build": "parcel build ./client/src/index.html --out-dir ./client/build",
-    "server": "npm run server:start",
-    "server:start": "npm run client:build && npm run server:build && npm run server:run",
+    "start": "npm run both:build",
+    "client": "npm run client:build && npm run server:run",
+    "client:build": "rm -rf ./client/build && parcel build ./client/src/index.html --out-dir ./client/build",
+    "both:build": "npm run client:build && npm run server:build",
+    "server": "npm run server:build",
+    "server:start": "npm run server:build && npm run server:run",
     "server:build": "rm -rf ./server/build && tsc -p ./server",
     "server:run": "node ./server/build/index.js"
   },
