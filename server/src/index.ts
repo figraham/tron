@@ -24,6 +24,7 @@ const io = require('socket.io')(server);
 
 io.sockets.on('connection', (socket: SocketIO.Socket) => {
   console.log(`${socket.id} is connected`);
+  socket.emit('established', {id: socket.id});
   
   socket.on('disconnect', () => {
     console.log(`${socket.id} was disconnected`);

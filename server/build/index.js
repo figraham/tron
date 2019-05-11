@@ -13,6 +13,7 @@ app.use(express.static('client/build'));
 var io = require('socket.io')(server);
 io.sockets.on('connection', function (socket) {
     console.log(socket.id + " is connected");
+    socket.emit('established', { id: socket.id });
     socket.on('disconnect', function () {
         console.log(socket.id + " was disconnected");
     });

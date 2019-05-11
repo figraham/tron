@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run both:build",
+    "start": "npm run both:build && npm run server:run",
     "client": "npm run client:build && npm run server:run",
     "client:build": "rm -rf ./client/build && parcel build ./client/src/index.html --out-dir ./client/build",
     "both:build": "npm run client:build && npm run server:build",
