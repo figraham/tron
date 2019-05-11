@@ -95,14 +95,10 @@ export class LightCycle {
       throw new Error(`LightCycle direction array is empty! ${JSON.stringify(this)}`);
     }
     if (this.direction.length === 1) {
-      switch(this.direction[0]) {
-      case Direction.UP:
-      case Direction.DOWN:
+      if (this.direction[0] === Direction.UP || this.direction[0] === Direction.DOWN) {
         return '│';
-      case Direction.LEFT:
-      case Direction.RIGHT:
-        return '─';
       }
+      return '─';
     }
     if (
       this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.UP    ||
