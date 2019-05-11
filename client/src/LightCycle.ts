@@ -103,25 +103,19 @@ export class LightCycle {
     if (
       this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.UP    ||
       this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.RIGHT
-    ) {
-      return '└';
-    } else if (
+    ) { return '└'; }
+    else if (
       this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.UP    ||
       this.direction[0] === Direction.DOWN  && this.direction[1] === Direction.LEFT
-    ) {
-      return '┘';
-    }
+    ) { return '┘'; }
     else if (
       this.direction[0] === Direction.LEFT  && this.direction[1] === Direction.DOWN  ||
       this.direction[0] === Direction.UP    && this.direction[1] === Direction.RIGHT
-    ) {
-      return '┌';
-    } else if (
+    ) { return '┌'; }
+    else if (
       this.direction[0] === Direction.RIGHT && this.direction[1] === Direction.DOWN  ||
       this.direction[0] === Direction.UP    && this.direction[1] === Direction.LEFT
-    ) {
-      return '┐';
-    }
+    ) { return '┐'; }
     return '0';
   }
 
