@@ -4,8 +4,6 @@ import {
 import {
   Server
 } from 'http';
-//import { Direction } from '../../client/src/Direction';
-//import { Vector2 } from 'terminaltxt';
 
 const express: any = require('express');
 
@@ -26,9 +24,6 @@ const io = require('socket.io')(server);
 let roomCounter: number = 0; // TODO recycle
 const roomMatcher: RegExp = new RegExp(/^[0-9]{1,19}$/);
 const TARGET_ROOM_SIZE: number = 2;
-
-//const startDirections: Direction[] = [Direction.RIGHT, Direction.LEFT];
-//const startPositions: Vector2[] = [new Vector2(1/4, 1/2), new Vector2(3/4, 1/2)];
 
 io.sockets.on('connection', (socket: SocketIO.Socket) => {
   console.log(`${socket.id} is connected`);
@@ -81,7 +76,12 @@ function joinRoom(socket: SocketIO.Socket): string {
 
 function checkRoomSize(room: string): void {
   if (io.sockets.adapter.rooms[room].length === TARGET_ROOM_SIZE) {
-    io.to(room).emit('room-ready');
+    let socketsInRoom = Object.keys(io.sockets.adapter.rooms[room].sockets);
+    for (let i: number = 0; i < socketsInRoom.length; i++) {
+      io.sockets.connected[socketsInRoom[i]].emit('room-ready', {
+        idInRoom: i,
+      });
+    }
     console.log(room + ' is full');
     console.log(io.sockets.adapter.rooms[room]);
   }

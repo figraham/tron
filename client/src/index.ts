@@ -10,6 +10,7 @@ import {
 import io from 'socket.io-client';
 import { LightCycle } from './LightCycle';
 import { userControls } from './user-controls';
+import { Direction } from './Direction';
 
 const LOOP: Loop = new Loop(init, update);
 const WIDTH = 100;
@@ -19,10 +20,13 @@ let socket: SocketIOClient.Socket;
 let ready: boolean[] = [false, false, false];
 let lost: boolean = false;
 
+let startPosition: Vector2;
+let startDirection: Direction;
+let playerColor: string;
+
 let input: InputTracker;
 let cycle: LightCycle;
 let term: GraphicsTerminal;
-let playerColor: string = 'green';
 
 function init(): void {
   setupSocket();
@@ -35,7 +39,6 @@ function init(): void {
   );
   // @ts-ignore
   term.cellController.container.style.display = 'none';
-  console.log('none');
   border();
   LOOP.frameRate(10);
   LOOP.running(false);
@@ -45,8 +48,7 @@ function setupGame(): void {
   if (!ready[0] || !ready[1]) { return; }
   // @ts-ignore
   term.cellController.container.style.display = 'block';
-  console.log('block');
-  cycle = new LightCycle(new Vector2(Math.floor(random(WIDTH)), Math.floor(random(HEIGHT))));
+  cycle = new LightCycle(startPosition, startDirection);
   input = userControls(cycle);
   ready[2] = true;
   LOOP.running(true);
@@ -58,8 +60,8 @@ function stopGame() {
   LOOP.running(false);
   // @ts-ignore
   term.cellController.container.style.display = 'none';
-  console.log('none');
   term.fill(' ');
+  term.fillColor('black');
   border();
   cycle = null;
   input = null;
@@ -78,8 +80,17 @@ function setupSocket(): void {
     ready[0] = true;
     setupGame();
   });
-  socket.on('room-ready', () => {
+  socket.on('room-ready', (message) => {
     console.log('room-ready');
+    if (message.idInRoom === 0) {
+      startDirection = Direction.RIGHT;
+      startPosition = new Vector2(Math.floor(WIDTH / 4), Math.floor(HEIGHT / 2));
+      playerColor = 'orange';
+    } else {
+      startDirection = Direction.LEFT;
+      startPosition = new Vector2(Math.floor(WIDTH * 3 / 4), Math.floor(HEIGHT / 2));
+      playerColor = 'blue';
+    }
     ready[1] = true;
     setupGame();
   });
@@ -91,7 +102,7 @@ function setupSocket(): void {
     if (ready[2]) {
       term.setCell(message.character, message.x, message.y);
       term.update();
-      //term.setCell(message.color, message.x, message.y);
+      term.setCellColor(message.color, message.x, message.y);
     }
   });
 }
