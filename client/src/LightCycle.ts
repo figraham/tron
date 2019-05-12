@@ -82,17 +82,18 @@ export class LightCycle {
     }
   }
 
-  public render(term: GraphicsTerminal): void {
-    term.fillColor('lightgrey');
+  public nextMove(callback: Function): void { // todo function type
+    // term.fillColor('lightgrey');
     if (this.destroyed) {
       return;
     }
-    term.setCell(this.getCharacter(), this.position.x, this.position.y);
-    term.setCellColor('red', this.position.x, this.position.y);
+    callback(this.getCharacter(), this.position.x, this.position.y);
+    // term.setCell(this.getCharacter(), this.position.x, this.position.y);
+    // term.setCellColor('red', this.position.x, this.position.y);
     while(this.direction.length > 1) {
       this.direction.shift();
     }
-    term.update();
+    // term.update();
     this.move();
   }
 

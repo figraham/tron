@@ -1,10 +1,11 @@
 import {
   Application
 } from 'express';
-
 import {
   Server
 } from 'http';
+//import { Direction } from '../../client/src/Direction';
+//import { Vector2 } from 'terminaltxt';
 
 const express: any = require('express');
 
@@ -26,11 +27,18 @@ let roomCounter: number = 0; // TODO recycle
 const roomMatcher: RegExp = new RegExp(/^[0-9]{1,19}$/);
 const TARGET_ROOM_SIZE: number = 2;
 
+//const startDirections: Direction[] = [Direction.RIGHT, Direction.LEFT];
+//const startPositions: Vector2[] = [new Vector2(1/4, 1/2), new Vector2(3/4, 1/2)];
+
 io.sockets.on('connection', (socket: SocketIO.Socket) => {
   console.log(`${socket.id} is connected`);
 
   let room: string = joinRoom(socket);
   socket.emit('established');
+
+  socket.on('move', (message) => {
+    io.to(room).emit('player-move', message);
+  });
 
   socket.on('disconnect', () => {
     console.log(room + ' had a lost connection');
