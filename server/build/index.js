@@ -15,17 +15,6 @@ var roomMatcher = new RegExp(/^.{1,19}$/);
 io.sockets.on('connection', function (socket) {
     console.log(socket.id + " is connected");
     socket.emit('established', { id: socket.id });
-    socket.on('mkroom', function (message) {
-        var created = false;
-        if (message.roomName.match(roomMatcher) && Object.keys(getRoomList()).indexOf(message.roomName) === -1) {
-            socket.join(message.roomName);
-            created = true;
-        }
-        io.to(message.roomName).emit('mkroom-reply', { created: created });
-    });
-    socket.on('lsrooms', function (message) {
-        socket.emit('lsrooms-reply', getRoomList());
-    });
     socket.on('disconnect', function () {
         console.log(socket.id + " was disconnected");
     });

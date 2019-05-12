@@ -28,19 +28,6 @@ io.sockets.on('connection', (socket: SocketIO.Socket) => {
   console.log(`${socket.id} is connected`);
   socket.emit('established', {id: socket.id});
 
-  socket.on('mkroom', (message) => {
-    let created = false;
-    if (message.roomName.match(roomMatcher) && Object.keys(getRoomList()).indexOf(message.roomName) === -1) {
-      socket.join(message.roomName);
-      created = true;
-    }
-    io.to(message.roomName).emit('mkroom-reply', {created: created});
-  });
-
-  socket.on('lsrooms', (message) => {
-    socket.emit('lsrooms-reply', getRoomList());
-  });
-
   socket.on('disconnect', () => {
     console.log(`${socket.id} was disconnected`);
   });
