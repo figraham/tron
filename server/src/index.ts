@@ -22,13 +22,19 @@ app.use(express.static('client/build'));
 
 const io = require('socket.io')(server);
 
-const roomMatcher: RegExp = new RegExp(/^.{1,19}$/);
+let roomCounter: number = 0; // TODO recycle
+const roomMatcher: RegExp = new RegExp(/^[0-9]{1,19}$/);
+const TARGET_ROOM_SIZE: number = 2;
 
 io.sockets.on('connection', (socket: SocketIO.Socket) => {
   console.log(`${socket.id} is connected`);
-  socket.emit('established', {id: socket.id});
+
+  let room: string = joinRoom(socket);
+  socket.emit('established');
 
   socket.on('disconnect', () => {
+    console.log(room + ' had a lost connection');
+    io.to(room).emit('connection-lost');
     console.log(`${socket.id} was disconnected`);
   });
 });
@@ -41,4 +47,34 @@ function getRoomList(): any {
     rooms[keys[i]] = allRooms[keys[i]];
   }
   return rooms;
+}
+
+function roomToJoin(): string | null {
+  let roomList = getRoomList();
+  let keys: string[] = Object.keys(roomList);
+  for (let i: number = 0; i < keys.length; i++) {
+    if (roomList[keys[i]].length < TARGET_ROOM_SIZE) {
+      return keys[i];
+    }
+  }
+  return null;
+}
+
+function joinRoom(socket: SocketIO.Socket): string {
+  let room: string | null = roomToJoin();
+  if (room === null) {
+    room = roomCounter.toString();
+    roomCounter++;
+  }
+  socket.join(room);
+  checkRoomSize(room);
+  return room;
+}
+
+function checkRoomSize(room: string): void {
+  if (io.sockets.adapter.rooms[room].length === TARGET_ROOM_SIZE) {
+    io.to(room).emit('room-ready');
+    console.log(room + ' is full');
+    console.log(io.sockets.adapter.rooms[room]);
+  }
 }

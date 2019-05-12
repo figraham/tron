@@ -11,11 +11,16 @@ var server = app.listen(process.env.PORT || 3000, function () {
 });
 app.use(express.static('client/build'));
 var io = require('socket.io')(server);
-var roomMatcher = new RegExp(/^.{1,19}$/);
+var roomCounter = 0; // TODO recycle
+var roomMatcher = new RegExp(/^[0-9]{1,19}$/);
+var TARGET_ROOM_SIZE = 2;
 io.sockets.on('connection', function (socket) {
     console.log(socket.id + " is connected");
-    socket.emit('established', { id: socket.id });
+    var room = joinRoom(socket);
+    socket.emit('established');
     socket.on('disconnect', function () {
+        console.log(room + ' had a lost connection');
+        io.to(room).emit('connection-lost');
         console.log(socket.id + " was disconnected");
     });
 });
@@ -27,5 +32,32 @@ function getRoomList() {
         rooms[keys[i]] = allRooms[keys[i]];
     }
     return rooms;
+}
+function roomToJoin() {
+    var roomList = getRoomList();
+    var keys = Object.keys(roomList);
+    for (var i = 0; i < keys.length; i++) {
+        if (roomList[keys[i]].length < TARGET_ROOM_SIZE) {
+            return keys[i];
+        }
+    }
+    return null;
+}
+function joinRoom(socket) {
+    var room = roomToJoin();
+    if (room === null) {
+        room = roomCounter.toString();
+        roomCounter++;
+    }
+    socket.join(room);
+    checkRoomSize(room);
+    return room;
+}
+function checkRoomSize(room) {
+    if (io.sockets.adapter.rooms[room].length === TARGET_ROOM_SIZE) {
+        io.to(room).emit('room-ready');
+        console.log(room + ' is full');
+        console.log(io.sockets.adapter.rooms[room]);
+    }
 }
 //# sourceMappingURL=index.js.map
