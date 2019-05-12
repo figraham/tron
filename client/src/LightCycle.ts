@@ -1,4 +1,4 @@
-import { Vector2, GraphicsTerminal } from "terminaltxt";
+import { Vector2, GraphicsTerminal, getIndex } from "terminaltxt";
 import { Direction } from "./Direction";
 
 export class LightCycle {
@@ -67,13 +67,17 @@ export class LightCycle {
     }
   }
 
-  public checkBoundaries(xMin: number, yMin: number, xMax: number, yMax: number): void {
+  public checkDestroyed(term: GraphicsTerminal): void {
     if (
-      this.position.x <= xMin ||
-      this.position.y <= yMin ||
-      this.position.x >= xMax ||
-      this.position.y >= yMax
+      this.position.x <= 0                ||
+      this.position.y <= 0                ||
+      this.position.x >= term.getWidth()  ||
+      this.position.y >= term.getHeight()
     ) {
+      this.destroyed = true;
+    }
+    // @ts-ignore
+    if (term.cellData.getCell(getIndex(this.position.x, this.position.y, term.cellController)) !== 0) {
       this.destroyed = true;
     }
   }

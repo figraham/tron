@@ -4,7 +4,8 @@ import {
   GraphicsTerminal,
   TerminalConfig,
   CharacterSet,
-  Vector2
+  Vector2,
+  random
 } from 'terminaltxt';
 import io from 'socket.io-client';
 import { LightCycle } from './LightCycle';
@@ -20,7 +21,6 @@ let lost: boolean = false;
 
 let input: InputTracker;
 let cycle: LightCycle;
-let cycle2: LightCycle;
 let term: GraphicsTerminal;
 
 function init(): void {
@@ -38,9 +38,8 @@ function setupGame(): void {
     } as TerminalConfig,
     new CharacterSet(' 0─│┌┐└┘╴╵╶╷')
   );
-  cycle = new LightCycle(new Vector2(WIDTH / 4, HEIGHT / 2));
-  cycle2 = new LightCycle(new Vector2(3* WIDTH / 4, HEIGHT / 2));
-  input = userControls(cycle, cycle2);
+  cycle = new LightCycle(new Vector2(Math.floor(random(WIDTH)), Math.floor(random(HEIGHT))));
+  input = userControls(cycle);
   LOOP.running(true);
 }
 
@@ -48,15 +47,14 @@ function stopGame() {
   LOOP.running(false);
   term = null;
   cycle = null;
-  cycle2 = null;
   input = null;
+  let oldTerm: HTMLElement = document.getElementById('termtxt-container');
+  oldTerm.parentElement.removeChild(oldTerm);
 }
 
 function update(): void {
-  cycle.checkBoundaries(0, 0, WIDTH, HEIGHT);
+  cycle.checkDestroyed(term);
   cycle.render(term);
-  cycle2.checkBoundaries(0, 0, WIDTH, HEIGHT);
-  cycle2.render(term);
   if (lost) { stopGame(); }
   //console.log(cycle.position);
 }

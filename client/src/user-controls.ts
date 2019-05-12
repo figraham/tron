@@ -5,7 +5,7 @@ import {
 } from "terminaltxt";
 import { LightCycle } from "./LightCycle";
 
-export function userControls(cycle: LightCycle, cycle2: LightCycle): InputTracker {
+export function userControls(cycle: LightCycle): InputTracker {
 
   const input: InputTracker = new InputTracker();
 
@@ -31,30 +31,6 @@ export function userControls(cycle: LightCycle, cycle2: LightCycle): InputTracke
     keys: ['ArrowRight'],
     keyEventType: KeyEventType.KEYDOWN,
     action: cycle.goRight,
-  } as KeyAction);
-
-  input.addAction({
-    keys: ['w'],
-    keyEventType: KeyEventType.KEYDOWN,
-    action: cycle2.goUp,
-  } as KeyAction);
-
-  input.addAction({
-    keys: ['s'],
-    keyEventType: KeyEventType.KEYDOWN,
-    action: cycle2.goDown,
-  } as KeyAction);
-
-  input.addAction({
-    keys: ['a'],
-    keyEventType: KeyEventType.KEYDOWN,
-    action: cycle2.goLeft,
-  } as KeyAction);
-
-  input.addAction({
-    keys: ['d'],
-    keyEventType: KeyEventType.KEYDOWN,
-    action: cycle2.goRight,
   } as KeyAction);
 
   return input;
