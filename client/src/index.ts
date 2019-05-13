@@ -5,7 +5,8 @@ import {
   TerminalConfig,
   CharacterSet,
   Vector2,
-  random
+  random,
+  OutputTerminal
 } from 'terminaltxt';
 import io from 'socket.io-client';
 import { LightCycle } from './LightCycle';
@@ -24,31 +25,55 @@ let startPosition: Vector2;
 let startDirection: Direction;
 let playerColor: string;
 
+let title: OutputTerminal;
+
 let input: InputTracker;
 let cycle: LightCycle;
 let term: GraphicsTerminal;
 
 function init(): void {
+  setupTitle();
   setupSocket();
   term = new GraphicsTerminal(
     {
       width: WIDTH,
       height: HEIGHT,
-      container: document.getElementById('container'),
+      container: document.getElementById('game-container'),
     } as TerminalConfig,
     new CharacterSet(' 0─│┌┐└┘╴╵╶╷║═╔╗╚╝')
   );
-  // @ts-ignore
-  term.cellController.container.style.display = 'none';
+  gameVisibility(false);
   border();
   LOOP.frameRate(10);
   LOOP.running(false);
 }
 
+function setupTitle(): void {
+  title = new OutputTerminal(
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      container: document.getElementById('title-container'),
+    } as TerminalConfig
+  );
+
+  title.write(  '┌───────┐┌───────┐┌───────┐┌───┐ ┌─┐');
+  title.writeln('│       ││   ┌─┐ ││       ││   └┐│ │');
+  title.writeln('└─┐   ┌─┘│   │ │ ││       ││    └┘ │');
+  title.writeln('  │   │  │   └─┘┌┘│ ┌─┐   ││       │');
+  title.writeln('  │   │  │   ┌┐ └┐│ │ │   ││ ┌┐    │');
+  title.writeln('  │   │  │   ││  ││ └─┘   ││ │└┐   │');
+  title.writeln('  └───┘  └───┘└──┘└───────┘└─┘ └───┘');
+
+  title.writeln('<a href="http://createdby.fi">createdby.fi</a>');
+  title.writeln('Use arrow keys or wasd to steer.');
+  title.writeln('Try not to hit walls or paths.');
+}
+
 function setupGame(): void {
   if (!ready[0] || !ready[1]) { return; }
-  // @ts-ignore
-  term.cellController.container.style.display = 'block';
+  titleVisibility(false)
+  gameVisibility(true);
   cycle = new LightCycle(startPosition, startDirection);
   input = userControls(cycle);
   ready[2] = true;
@@ -59,8 +84,8 @@ function setupGame(): void {
 function stopGame() {
   ready[2] = false;
   LOOP.running(false);
-  // @ts-ignore
-  term.cellController.container.style.display = 'none';
+  titleVisibility(true);
+  gameVisibility(false);
   term.fill(' ');
   term.fillColor('white');
   border();
@@ -76,8 +101,12 @@ function update(): void {
 
 function setupSocket(): void {
   socket = io.connect('http://localhost:3000');
+  title.writeln('Connecting to server...');
   socket.on('established', () => {
-    console.log('established');
+    title.writeln('Connection Established')
+    if (!ready[1]) {
+      title.writeln('Waiting for a competitor...');
+    }
     ready[0] = true;
     setupGame();
   });
@@ -87,16 +116,18 @@ function setupSocket(): void {
       startDirection = Direction.RIGHT;
       startPosition = new Vector2(Math.floor(WIDTH / 4), Math.floor(HEIGHT / 2));
       playerColor = 'cyan';
+      title.writeln('You are <span style="color:cyan">blue</span>.');
     } else {
       startDirection = Direction.LEFT;
       startPosition = new Vector2(Math.floor(WIDTH * 3 / 4), Math.floor(HEIGHT / 2));
       playerColor = 'goldenrod';
+      title.writeln('You are <span style="color:goldenrod">gold</span>.');
     }
     ready[1] = true;
     setupGame();
   });
   socket.on('connection-lost', () => {
-    console.log('connection-lost');
+    title.writeln('Your competitor\'s connection was lost!');
     lost = true;
   });
   socket.on('player-move', (message) => {
@@ -130,4 +161,24 @@ function border() {
   term.setCell('╗', term.getWidth() - 1, 0);
   term.setCell('╚', 0, term.getHeight() - 1);
   term.setCell('╝', term.getWidth() - 1, term.getHeight() - 1);
+}
+
+function gameVisibility(visible: boolean): void {
+  if (visible) {
+    // @ts-ignore
+    term.cellController.container.style.display = 'block';
+  } else {
+    // @ts-ignore
+    term.cellController.container.style.display = 'none';
+  }
+}
+
+function titleVisibility(visible: boolean): void {
+  if (visible) {
+    // @ts-ignore
+    title.lineController.container.style.display = 'block';
+  } else {
+    // @ts-ignore
+    title.lineController.container.style.display = 'none';
+  }
 }

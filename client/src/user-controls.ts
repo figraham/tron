@@ -10,25 +10,25 @@ export function userControls(cycle: LightCycle): InputTracker {
   const input: InputTracker = new InputTracker();
 
   input.addAction({
-    keys: ['ArrowUp'],
+    keys: ['ArrowUp', 'w'],
     keyEventType: KeyEventType.KEYDOWN,
     action: cycle.goUp,
   } as KeyAction);
 
   input.addAction({
-    keys: ['ArrowDown'],
+    keys: ['ArrowDown', 's'],
     keyEventType: KeyEventType.KEYDOWN,
     action: cycle.goDown,
   } as KeyAction);
 
   input.addAction({
-    keys: ['ArrowLeft'],
+    keys: ['ArrowLeft', 'a'],
     keyEventType: KeyEventType.KEYDOWN,
     action: cycle.goLeft,
   } as KeyAction);
 
   input.addAction({
-    keys: ['ArrowRight'],
+    keys: ['ArrowRight', 'd'],
     keyEventType: KeyEventType.KEYDOWN,
     action: cycle.goRight,
   } as KeyAction);
