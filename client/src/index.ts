@@ -13,8 +13,8 @@ import { userControls } from './user-controls';
 import { Direction } from './Direction';
 
 const LOOP: Loop = new Loop(init, update);
-const WIDTH = 100;
-const HEIGHT = 50;
+const WIDTH = 126;
+const HEIGHT = 60;
 let socket: SocketIOClient.Socket;
 
 let ready: boolean[] = [false, false, false];
@@ -34,6 +34,7 @@ function init(): void {
     {
       width: WIDTH,
       height: HEIGHT,
+      container: document.getElementById('container'),
     } as TerminalConfig,
     new CharacterSet(' 0─│┌┐└┘╴╵╶╷║═╔╗╚╝')
   );
@@ -61,7 +62,7 @@ function stopGame() {
   // @ts-ignore
   term.cellController.container.style.display = 'none';
   term.fill(' ');
-  term.fillColor('black');
+  term.fillColor('white');
   border();
   cycle = null;
   input = null;
@@ -85,11 +86,11 @@ function setupSocket(): void {
     if (message.idInRoom === 0) {
       startDirection = Direction.RIGHT;
       startPosition = new Vector2(Math.floor(WIDTH / 4), Math.floor(HEIGHT / 2));
-      playerColor = 'orange';
+      playerColor = 'cyan';
     } else {
       startDirection = Direction.LEFT;
       startPosition = new Vector2(Math.floor(WIDTH * 3 / 4), Math.floor(HEIGHT / 2));
-      playerColor = 'blue';
+      playerColor = 'goldenrod';
     }
     ready[1] = true;
     setupGame();
