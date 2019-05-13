@@ -165,20 +165,16 @@ function border() {
 
 function gameVisibility(visible: boolean): void {
   if (visible) {
-    // @ts-ignore
-    term.cellController.container.style.display = 'block';
+    document.getElementById('game').style.display = 'flex';
   } else {
-    // @ts-ignore
-    term.cellController.container.style.display = 'none';
+    document.getElementById('game').style.display = 'none';
   }
 }
 
 function titleVisibility(visible: boolean): void {
   if (visible) {
-    // @ts-ignore
-    title.lineController.container.style.display = 'block';
+    document.getElementById('title').style.display = 'flex';
   } else {
-    // @ts-ignore
-    title.lineController.container.style.display = 'none';
+    document.getElementById('title').style.display = 'none';
   }
 }
