@@ -40,7 +40,7 @@ function init(): void {
       height: HEIGHT,
       container: document.getElementById('game-container'),
     } as TerminalConfig,
-    new CharacterSet(' 0─│┌┐└┘╴╵╶╷║═╔╗╚╝')
+    new CharacterSet(' ─│┌┐└┘║═╔╗╚╝')
   );
   gameVisibility(false);
   border();
@@ -106,12 +106,12 @@ function setupSocket(): void {
     title.writeln('Connection Established')
     if (!ready[1]) {
       title.writeln('Waiting for a competitor...');
+      title.writeln('This is dependent on someone else visiting the site.');
     }
     ready[0] = true;
-    setupGame();
+    // setupGame();
   });
   socket.on('room-ready', (message) => {
-    console.log('room-ready');
     if (message.idInRoom === 0) {
       startDirection = Direction.RIGHT;
       startPosition = new Vector2(Math.floor(WIDTH / 4), Math.floor(HEIGHT / 2));
@@ -123,8 +123,12 @@ function setupSocket(): void {
       playerColor = 'goldenrod';
       title.writeln('You are <span style="color:goldenrod">gold</span>.');
     }
-    ready[1] = true;
-    setupGame();
+    let timeToStart = message.gameStartTime - Date.now();
+    setTimeout(() => {
+      ready[1] = true;
+      setupGame();
+    }, timeToStart);
+    startTime(timeToStart);
   });
   socket.on('connection-lost', () => {
     title.writeln('Your competitor\'s connection was lost!');
@@ -137,6 +141,18 @@ function setupSocket(): void {
       term.setCellColor(message.color, message.x, message.y);
     }
   });
+}
+
+function startTime(timeToStart: number): void {
+  setTimeout(() => {
+    if (timeToStart > 1000) {
+      const time: number = Math.floor(timeToStart / 1000);
+      title.overwrite(`Game Starting in ${time}`);
+      startTime(timeToStart - 1000);
+    } else {
+      title.writeln('Started!');
+    }
+  }, 1000);
 }
 
 function emitMove(character: string, x: number, y: number) {
