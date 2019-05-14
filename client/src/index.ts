@@ -12,6 +12,7 @@ import io from 'socket.io-client';
 import { LightCycle } from './LightCycle';
 import { userControls } from './user-controls';
 import { Direction } from './Direction';
+import { ObstacleConfiguration } from './ObstacleConfiguration';
 
 const LOOP: Loop = new Loop(init, update);
 const WIDTH = 126;
@@ -36,10 +37,12 @@ let term: GraphicsTerminal;
 
 let playerScore: number = 0;
 let level: number = 0;
+let obstaclesConfigurations: ObstacleConfiguration[] = [];
 
 function init(): void {
   setupTitle();
   setupSocket();
+  setupObstacles();
   term = new GraphicsTerminal(
     {
       width: WIDTH,
@@ -49,7 +52,7 @@ function init(): void {
     new CharacterSet(' █─│┌┐└┘║═╔╗╚╝')
   );
   gameVisibility(false);
-  border();
+  drawBox(0, 0, WIDTH, HEIGHT);
   LOOP.frameRate(10);
   LOOP.running(false);
 }
@@ -83,6 +86,7 @@ function setupGame(): void {
   }
   titleVisibility(false)
   gameVisibility(true);
+  obstacles();
   cycle = new LightCycle(Vector2.copy(startPosition), startDirection);
   input = userControls(cycle);
   gameScreenReady = true;
@@ -92,11 +96,11 @@ function setupGame(): void {
 function stopGame() {
   gameScreenReady = false;
   LOOP.running(false);
-  titleVisibility(true);
-  gameVisibility(false);
   term.fill(' ');
   term.fillColor('white');
-  border();
+  titleVisibility(true);
+  gameVisibility(false);
+  drawBox(0, 0, WIDTH, HEIGHT);
   cycle = null;
   input = null;
 }
@@ -238,19 +242,44 @@ function emitDestroyed(x: number, y: number): void {
   });
 }
 
-function border() {
-  for (let col: number = 1; col < term.getWidth() - 1; col++) {
-    term.setCell('═', col, 0);
-    term.setCell('═', col, term.getHeight() - 1);
+function drawBox(x: number, y: number, width: number, height: number) {
+  let x2 = x + width;
+  let y2 = y + height;
+  for (let col: number = x + 1; col < x2 - 1; col++) {
+    term.setCell('═', col, y);
+    term.setCell('═', col, y2 - 1);
   }
-  for (let row: number = 1; row < term.getHeight() - 1; row++) {
-    term.setCell('║', 0, row);
-    term.setCell('║', term.getWidth() - 1, row);
+  for (let row: number = y + 1; row < y2 - 1; row++) {
+    term.setCell('║', x, row);
+    term.setCell('║', x2 - 1, row);
   }
-  term.setCell('╔', 0, 0);
-  term.setCell('╗', term.getWidth() - 1, 0);
-  term.setCell('╚', 0, term.getHeight() - 1);
-  term.setCell('╝', term.getWidth() - 1, term.getHeight() - 1);
+  term.setCell('╔', x, y);
+  term.setCell('╗', x2 - 1, y);
+  term.setCell('╚', x, y2 - 1);
+  term.setCell('╝', x2 - 1, y2 - 1);
+}
+
+function setupObstacles() {
+  obstaclesConfigurations.push({x: 60, y: 20, width: 6, height: 20} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 22, y: 10, width: 32, height: 16} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 72, y: 10, width: 32, height: 16} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 22, y: 34, width: 32, height: 16} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 72, y: 34, width: 32, height: 16} as ObstacleConfiguration);
+}
+
+function obstacles() {
+  if (!(level === 0)) {
+    let start = 0;
+    let stop = obstaclesConfigurations.length;
+    if (level === 1) {
+      stop = 1;
+    } if (level === 2) {
+      start = 1;
+    }
+    for (let i: number = start; i < stop; i++) {
+      drawBox(obstaclesConfigurations[i].x, obstaclesConfigurations[i].y, obstaclesConfigurations[i].width, obstaclesConfigurations[i].height);
+    }
+  }
 }
 
 function gameVisibility(visible: boolean): void {
