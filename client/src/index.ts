@@ -5,7 +5,6 @@ import {
   TerminalConfig,
   CharacterSet,
   Vector2,
-  random,
   OutputTerminal,
   getIndex
 } from 'terminaltxt';
@@ -23,6 +22,7 @@ let socketsInRoom: string[][] = [];
 let socketEstablished: boolean = false;
 let gameScreenReady: boolean = false;
 let competitorConnected: boolean = false;
+let nextLevelStartTime: number;
 
 let startPosition: Vector2;
 let startDirection: Direction;
@@ -33,6 +33,9 @@ let title: OutputTerminal;
 let input: InputTracker;
 let cycle: LightCycle;
 let term: GraphicsTerminal;
+
+let playerScore: number = 0;
+let level: number = 0;
 
 function init(): void {
   setupTitle();
@@ -80,7 +83,7 @@ function setupGame(): void {
   }
   titleVisibility(false)
   gameVisibility(true);
-  cycle = new LightCycle(startPosition, startDirection);
+  cycle = new LightCycle(Vector2.copy(startPosition), startDirection);
   input = userControls(cycle);
   gameScreenReady = true;
   LOOP.running(true);
@@ -99,12 +102,13 @@ function stopGame() {
 }
 
 function update(): void {
-  if (!competitorConnected) { 
+  if (competitorConnected && cycle) { 
+    cycle.checkDestroyed(term, emitDestroyed);
+    cycle.nextMove(emitMove);
+  } else if (!competitorConnected) {
+    LOOP.running(false);
     stopGame();
-    return;
   }
-  cycle.checkDestroyed(term, emitDestroyed);
-  cycle.nextMove(emitMove);
 }
 
 function setupSocket(): void {
@@ -140,9 +144,11 @@ function setupSocket(): void {
 
   socket.on('connection-lost', () => {
     title.writeln('Your competitor\'s connection was lost!');
+    title.writeln('Your score has been reset.');
     title.newLine();
     competitorConnected = false;
     socketsInRoom.shift();
+    playerScore = 0;
   });
 
   socket.on('player-move', (message) => {
@@ -178,13 +184,19 @@ function setupSocket(): void {
         }
       }
     }
+    nextLevelStartTime = message.nextLevelTime;
+    setTimeout(() => {
+      checkScore();
+      stopGame();
+      nextLevel();
+    }, 1000);
   });
 
 }
 
 function startTime(timeToStart: number, socketsAtStart: string[]): void {
   setTimeout(() => {
-    if (competitorConnected && socketsAtStart === socketsInRoom[0]) {
+    if (competitorConnected && socketsAtStart === socketsInRoom[0] && !gameScreenReady) {
       if (timeToStart > 1000) {
         const time: number = Math.floor(timeToStart / 1000);
         title.overwrite(`Game Starting in ${time}`);
@@ -196,6 +208,18 @@ function startTime(timeToStart: number, socketsAtStart: string[]): void {
       }
     }
   }, 1000);
+}
+
+function checkScore(): void {
+  if (cycle && !cycle.destroyed) {
+    playerScore++;
+  }
+  title.overwrite(`Your score is: ${playerScore}`);
+}
+
+function nextLevel() {
+  level++;
+  startTime(nextLevelStartTime - Date.now(), socketsInRoom[0]);
 }
 
 function emitMove(character: string, x: number, y: number) {

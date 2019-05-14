@@ -22,6 +22,7 @@ io.sockets.on('connection', function (socket) {
         io.to(room).emit('player-move', message);
     });
     socket.on('destroyed', function (message) {
+        message.nextLevelTime = Date.now() + 7000;
         io.to(room).emit('player-destroyed', message);
     });
     socket.on('disconnect', function () {
@@ -66,7 +67,7 @@ function checkRoomSize(room) {
             io.sockets.connected[socketsInRoom[i]].emit('room-ready', {
                 socketIDs: socketsInRoom,
                 idInRoom: i,
-                gameStartTime: Date.now() + 10000,
+                gameStartTime: Date.now() + 6000,
             });
         }
         console.log(room + ' is full');
