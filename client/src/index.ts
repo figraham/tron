@@ -5,106 +5,225 @@ import {
   TerminalConfig,
   CharacterSet,
   Vector2,
-  random
+  OutputTerminal,
+  getIndex
 } from 'terminaltxt';
 import io from 'socket.io-client';
 import { LightCycle } from './LightCycle';
 import { userControls } from './user-controls';
 import { Direction } from './Direction';
+import { ObstacleConfiguration } from './ObstacleConfiguration';
 
 const LOOP: Loop = new Loop(init, update);
-const WIDTH = 100;
-const HEIGHT = 50;
-let socket: SocketIOClient.Socket;
+const WIDTH = 126;
+const HEIGHT = 60;
 
-let ready: boolean[] = [false, false, false];
-let lost: boolean = false;
+let socket: SocketIOClient.Socket;
+let socketsInRoom: string[][] = [];
+let socketEstablished: boolean = false;
+let gameScreenReady: boolean = false;
+let competitorConnected: boolean = false;
+let nextLevelStartTime: number;
 
 let startPosition: Vector2;
 let startDirection: Direction;
 let playerColor: string;
 
+let title: OutputTerminal;
+
 let input: InputTracker;
 let cycle: LightCycle;
 let term: GraphicsTerminal;
 
+let playerScore: number = 0;
+let level: number = 0;
+let obstaclesConfigurations: ObstacleConfiguration[] = [];
+
 function init(): void {
+  setupTitle();
   setupSocket();
+  setupObstacles();
   term = new GraphicsTerminal(
     {
       width: WIDTH,
       height: HEIGHT,
+      container: document.getElementById('game-container'),
     } as TerminalConfig,
-    new CharacterSet(' 0─│┌┐└┘╴╵╶╷║═╔╗╚╝')
+    new CharacterSet(' █─│┌┐└┘║═╔╗╚╝')
   );
-  // @ts-ignore
-  term.cellController.container.style.display = 'none';
-  border();
+  gameVisibility(false);
+  drawBox(0, 0, WIDTH, HEIGHT);
   LOOP.frameRate(10);
   LOOP.running(false);
 }
 
+function setupTitle(): void {
+  title = new OutputTerminal(
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      container: document.getElementById('title-container'),
+    } as TerminalConfig
+  );
+
+  title.write(  '┌───────┐┌───────┐┌───────┐┌───┐ ┌─┐');
+  title.writeln('│       ││   ┌─┐ ││       ││   └┐│ │');
+  title.writeln('└─┐   ┌─┘│   │ │ ││       ││    └┘ │');
+  title.writeln('  │   │  │   └─┘┌┘│ ┌─┐   ││       │');
+  title.writeln('  │   │  │   ┌┐ └┐│ │ │   ││ ┌┐    │');
+  title.writeln('  │   │  │   ││  ││ └─┘   ││ │└┐   │');
+  title.writeln('  └───┘  └───┘└──┘└───────┘└─┘ └───┘');
+
+  title.writeln('<a href="http://createdby.fi">createdby.fi</a>');
+  title.writeln('Use arrow keys or wasd to steer.');
+  title.writeln('Try not to hit walls or paths.');
+}
+
 function setupGame(): void {
-  if (!ready[0] || !ready[1]) { return; }
-  // @ts-ignore
-  term.cellController.container.style.display = 'block';
-  cycle = new LightCycle(startPosition, startDirection);
+  if (!socketEstablished || !competitorConnected) {
+    location.reload(true); // Reload page, something went wrong.
+    return;
+  }
+  titleVisibility(false)
+  gameVisibility(true);
+  obstacles();
+  cycle = new LightCycle(Vector2.copy(startPosition), startDirection);
   input = userControls(cycle);
-  ready[2] = true;
+  gameScreenReady = true;
   LOOP.running(true);
-  lost = false;
 }
 
 function stopGame() {
-  ready[2] = false;
+  gameScreenReady = false;
   LOOP.running(false);
-  // @ts-ignore
-  term.cellController.container.style.display = 'none';
   term.fill(' ');
-  term.fillColor('black');
-  border();
+  term.fillColor('white');
+  titleVisibility(true);
+  gameVisibility(false);
+  drawBox(0, 0, WIDTH, HEIGHT);
   cycle = null;
   input = null;
 }
 
 function update(): void {
-  cycle.checkDestroyed(term);
-  cycle.nextMove(emitMove);
-  if (lost) { stopGame(); }
+  if (competitorConnected && cycle) { 
+    cycle.checkDestroyed(term, emitDestroyed);
+    cycle.nextMove(emitMove);
+  } else if (!competitorConnected) {
+    LOOP.running(false);
+    stopGame();
+  }
 }
 
 function setupSocket(): void {
   socket = io.connect('http://localhost:3000');
+  title.writeln('Connecting to server...');
+
   socket.on('established', () => {
-    console.log('established');
-    ready[0] = true;
-    setupGame();
+    title.writeln('Connection Established')
+    if (!competitorConnected) {
+      title.writeln('Waiting for a competitor...');
+      title.writeln('This is dependent on someone else visiting the site.');
+    }
+    socketEstablished = true;
   });
+
   socket.on('room-ready', (message) => {
-    console.log('room-ready');
     if (message.idInRoom === 0) {
       startDirection = Direction.RIGHT;
       startPosition = new Vector2(Math.floor(WIDTH / 4), Math.floor(HEIGHT / 2));
-      playerColor = 'orange';
+      playerColor = 'cyan';
+      title.writeln('You are <span style="color:cyan">blue</span>.');
     } else {
       startDirection = Direction.LEFT;
       startPosition = new Vector2(Math.floor(WIDTH * 3 / 4), Math.floor(HEIGHT / 2));
-      playerColor = 'blue';
+      playerColor = 'goldenrod';
+      title.writeln('You are <span style="color:goldenrod">gold</span>.');
     }
-    ready[1] = true;
-    setupGame();
+    let timeToStart = message.gameStartTime - Date.now();
+    competitorConnected = true;
+    socketsInRoom.push(message.socketIDs);
+    startTime(timeToStart, socketsInRoom[0]);
   });
+
   socket.on('connection-lost', () => {
-    console.log('connection-lost');
-    lost = true;
+    title.writeln('Your competitor\'s connection was lost!');
+    title.writeln('Your score has been reset.');
+    title.newLine();
+    competitorConnected = false;
+    socketsInRoom.shift();
+    playerScore = 0;
   });
+
   socket.on('player-move', (message) => {
-    if (ready[2]) {
+    if (gameScreenReady) {
       term.setCell(message.character, message.x, message.y);
       term.update();
       term.setCellColor(message.color, message.x, message.y);
     }
   });
+
+  socket.on('player-destroyed', (message) => {
+    if (gameScreenReady) {
+      for (let xOff: number = -2; xOff <= 2; xOff++) {
+        for (let yOff: number = -2; yOff <= 2; yOff++) {
+          let x = message.x + xOff;
+          let y = message.y + yOff;
+          let dist = Math.sqrt(xOff * xOff + yOff * yOff);
+          setTimeout(() => {
+            // @ts-ignore
+            if (term.cellData.getCell(getIndex(x, y, term.cellData)) >= 0 && term.cellData.getCell(getIndex(x, y, term.cellData)) <= 7) { // TODO remove hard coded values
+              term.setCell('█', x, y);
+              term.update();
+              term.setCellColor('white', x, y);
+            }
+          }, dist * 20)
+          setTimeout(() => {
+            // @ts-ignore
+            if (term.cellData.getCell(getIndex(x, y, term.cellData)) >= 0 && term.cellData.getCell(getIndex(x, y, term.cellData)) <= 7) { // TODO remove hard coded values
+              term.setCell(' ', x, y);
+              term.update();
+            }
+          }, dist * 40)
+        }
+      }
+    }
+    nextLevelStartTime = message.nextLevelTime;
+    setTimeout(() => {
+      checkScore();
+      stopGame();
+      nextLevel();
+    }, 1000);
+  });
+
+}
+
+function startTime(timeToStart: number, socketsAtStart: string[]): void {
+  setTimeout(() => {
+    if (competitorConnected && socketsAtStart === socketsInRoom[0] && !gameScreenReady) {
+      if (timeToStart > 1000) {
+        const time: number = Math.floor(timeToStart / 1000);
+        title.overwrite(`Game Starting in ${time}`);
+        startTime(timeToStart - 1000, socketsAtStart);
+      } else {
+        title.writeln('Started!');
+        title.newLine();
+        setupGame();
+      }
+    }
+  }, 1000);
+}
+
+function checkScore(): void {
+  if (cycle && !cycle.destroyed) {
+    playerScore++;
+  }
+  title.overwrite(`Your score is: ${playerScore}`);
+}
+
+function nextLevel() {
+  level++;
+  startTime(nextLevelStartTime - Date.now(), socketsInRoom[0]);
 }
 
 function emitMove(character: string, x: number, y: number) {
@@ -116,17 +235,65 @@ function emitMove(character: string, x: number, y: number) {
   })
 }
 
-function border() {
-  for (let col: number = 1; col < term.getWidth() - 1; col++) {
-    term.setCell('═', col, 0);
-    term.setCell('═', col, term.getHeight() - 1);
+function emitDestroyed(x: number, y: number): void {
+  socket.emit('destroyed', {
+    x: x,
+    y: y,
+  });
+}
+
+function drawBox(x: number, y: number, width: number, height: number) {
+  let x2 = x + width;
+  let y2 = y + height;
+  for (let col: number = x + 1; col < x2 - 1; col++) {
+    term.setCell('═', col, y);
+    term.setCell('═', col, y2 - 1);
   }
-  for (let row: number = 1; row < term.getHeight() - 1; row++) {
-    term.setCell('║', 0, row);
-    term.setCell('║', term.getWidth() - 1, row);
+  for (let row: number = y + 1; row < y2 - 1; row++) {
+    term.setCell('║', x, row);
+    term.setCell('║', x2 - 1, row);
   }
-  term.setCell('╔', 0, 0);
-  term.setCell('╗', term.getWidth() - 1, 0);
-  term.setCell('╚', 0, term.getHeight() - 1);
-  term.setCell('╝', term.getWidth() - 1, term.getHeight() - 1);
+  term.setCell('╔', x, y);
+  term.setCell('╗', x2 - 1, y);
+  term.setCell('╚', x, y2 - 1);
+  term.setCell('╝', x2 - 1, y2 - 1);
+}
+
+function setupObstacles() {
+  obstaclesConfigurations.push({x: 60, y: 20, width: 6, height: 20} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 22, y: 10, width: 32, height: 16} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 72, y: 10, width: 32, height: 16} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 22, y: 34, width: 32, height: 16} as ObstacleConfiguration);
+  obstaclesConfigurations.push({x: 72, y: 34, width: 32, height: 16} as ObstacleConfiguration);
+}
+
+function obstacles() {
+  if (!(level === 0)) {
+    let start = 0;
+    let stop = obstaclesConfigurations.length;
+    if (level === 1) {
+      stop = 1;
+    } if (level === 2) {
+      start = 1;
+    }
+    for (let i: number = start; i < stop; i++) {
+      drawBox(obstaclesConfigurations[i].x, obstaclesConfigurations[i].y, obstaclesConfigurations[i].width, obstaclesConfigurations[i].height);
+    }
+  }
+}
+
+function gameVisibility(visible: boolean): void {
+  if (visible) {
+    document.getElementById('game').style.display = 'flex';
+  } else {
+    document.getElementById('game').style.display = 'none';
+  }
+}
+
+function titleVisibility(visible: boolean): void {
+  if (visible) {
+    document.getElementById('title').style.display = 'flex';
+  } else {
+    document.getElementById('title').style.display = 'none';
+  }
 }

@@ -35,6 +35,11 @@ io.sockets.on('connection', (socket: SocketIO.Socket) => {
     io.to(room).emit('player-move', message);
   });
 
+  socket.on('destroyed', (message) => {
+    message.nextLevelTime = Date.now() + 7000;
+    io.to(room).emit('player-destroyed', message);
+  });
+
   socket.on('disconnect', () => {
     console.log(room + ' had a lost connection');
     io.to(room).emit('connection-lost');
@@ -79,7 +84,9 @@ function checkRoomSize(room: string): void {
     let socketsInRoom = Object.keys(io.sockets.adapter.rooms[room].sockets);
     for (let i: number = 0; i < socketsInRoom.length; i++) {
       io.sockets.connected[socketsInRoom[i]].emit('room-ready', {
+        socketIDs: socketsInRoom,
         idInRoom: i,
+        gameStartTime: Date.now() + 6000,
       });
     }
     console.log(room + ' is full');
