@@ -17,10 +17,11 @@ import { Direction } from './Direction';
 const LOOP: Loop = new Loop(init, update);
 const WIDTH = 126;
 const HEIGHT = 60;
-let socket: SocketIOClient.Socket;
 
-let ready: boolean[] = [false, false, false];
-let lost: boolean = false;
+let socket: SocketIOClient.Socket;
+let socketEstablished: boolean = false;
+let gameScreenReady: boolean = false;
+let competitorConnected: boolean = false;
 
 let startPosition: Vector2;
 let startDirection: Direction;
@@ -72,18 +73,20 @@ function setupTitle(): void {
 }
 
 function setupGame(): void {
-  if (!ready[0] || !ready[1]) { return; }
+  if (!socketEstablished || !competitorConnected) {
+    location.reload(true); // Reload page, something went wrong.
+    return;
+  }
   titleVisibility(false)
   gameVisibility(true);
   cycle = new LightCycle(startPosition, startDirection);
   input = userControls(cycle);
-  ready[2] = true;
+  gameScreenReady = true;
   LOOP.running(true);
-  lost = false;
 }
 
 function stopGame() {
-  ready[2] = false;
+  gameScreenReady = false;
   LOOP.running(false);
   titleVisibility(true);
   gameVisibility(false);
@@ -95,23 +98,27 @@ function stopGame() {
 }
 
 function update(): void {
+  if (!competitorConnected) { 
+    stopGame();
+    return;
+  }
   cycle.checkDestroyed(term, emitDestroyed);
   cycle.nextMove(emitMove);
-  if (lost) { stopGame(); }
 }
 
 function setupSocket(): void {
   socket = io.connect('http://localhost:3000');
   title.writeln('Connecting to server...');
+
   socket.on('established', () => {
     title.writeln('Connection Established')
-    if (!ready[1]) {
+    if (!competitorConnected) {
       title.writeln('Waiting for a competitor...');
       title.writeln('This is dependent on someone else visiting the site.');
     }
-    ready[0] = true;
-    // setupGame();
+    socketEstablished = true;
   });
+
   socket.on('room-ready', (message) => {
     if (message.idInRoom === 0) {
       startDirection = Direction.RIGHT;
@@ -125,31 +132,33 @@ function setupSocket(): void {
       title.writeln('You are <span style="color:goldenrod">gold</span>.');
     }
     let timeToStart = message.gameStartTime - Date.now();
+    competitorConnected = true;
     setTimeout(() => {
-      ready[1] = true;
       setupGame();
     }, timeToStart);
     startTime(timeToStart);
   });
+
   socket.on('connection-lost', () => {
     title.writeln('Your competitor\'s connection was lost!');
-    lost = true;
+    competitorConnected = false;
   });
+
   socket.on('player-move', (message) => {
-    if (ready[2]) {
+    if (gameScreenReady) {
       term.setCell(message.character, message.x, message.y);
       term.update();
       term.setCellColor(message.color, message.x, message.y);
     }
   });
+
   socket.on('player-destroyed', (message) => {
-    if (ready[2]) {
+    if (gameScreenReady) {
       for (let xOff: number = -2; xOff <= 2; xOff++) {
         for (let yOff: number = -2; yOff <= 2; yOff++) {
           let x = message.x + xOff;
           let y = message.y + yOff;
           let dist = Math.sqrt(xOff * xOff + yOff * yOff);
-          console.log(dist * 10);
           setTimeout(() => {
             // @ts-ignore
             if (term.cellData.getCell(getIndex(x, y, term.cellData)) >= 0 && term.cellData.getCell(getIndex(x, y, term.cellData)) <= 7) { // TODO remove hard coded values
@@ -169,6 +178,7 @@ function setupSocket(): void {
       }
     }
   });
+
 }
 
 function startTime(timeToStart: number): void {
