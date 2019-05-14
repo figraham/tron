@@ -83,6 +83,7 @@ function checkRoomSize(room: string): void {
     let socketsInRoom = Object.keys(io.sockets.adapter.rooms[room].sockets);
     for (let i: number = 0; i < socketsInRoom.length; i++) {
       io.sockets.connected[socketsInRoom[i]].emit('room-ready', {
+        socketIDs: socketsInRoom,
         idInRoom: i,
         gameStartTime: Date.now() + 10000,
       });

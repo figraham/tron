@@ -19,6 +19,7 @@ const WIDTH = 126;
 const HEIGHT = 60;
 
 let socket: SocketIOClient.Socket;
+let socketsInRoom: string[][] = [];
 let socketEstablished: boolean = false;
 let gameScreenReady: boolean = false;
 let competitorConnected: boolean = false;
@@ -133,15 +134,15 @@ function setupSocket(): void {
     }
     let timeToStart = message.gameStartTime - Date.now();
     competitorConnected = true;
-    setTimeout(() => {
-      setupGame();
-    }, timeToStart);
-    startTime(timeToStart);
+    socketsInRoom.push(message.socketIDs);
+    startTime(timeToStart, socketsInRoom[0]);
   });
 
   socket.on('connection-lost', () => {
     title.writeln('Your competitor\'s connection was lost!');
+    title.newLine();
     competitorConnected = false;
+    socketsInRoom.shift();
   });
 
   socket.on('player-move', (message) => {
@@ -181,14 +182,18 @@ function setupSocket(): void {
 
 }
 
-function startTime(timeToStart: number): void {
+function startTime(timeToStart: number, socketsAtStart: string[]): void {
   setTimeout(() => {
-    if (timeToStart > 1000) {
-      const time: number = Math.floor(timeToStart / 1000);
-      title.overwrite(`Game Starting in ${time}`);
-      startTime(timeToStart - 1000);
-    } else {
-      title.writeln('Started!');
+    if (competitorConnected && socketsAtStart === socketsInRoom[0]) {
+      if (timeToStart > 1000) {
+        const time: number = Math.floor(timeToStart / 1000);
+        title.overwrite(`Game Starting in ${time}`);
+        startTime(timeToStart - 1000, socketsAtStart);
+      } else {
+        title.writeln('Started!');
+        title.newLine();
+        setupGame();
+      }
     }
   }, 1000);
 }
