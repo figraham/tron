@@ -35,6 +35,10 @@ io.sockets.on('connection', (socket: SocketIO.Socket) => {
     io.to(room).emit('player-move', message);
   });
 
+  socket.on('destroyed', (message) => {
+    io.to(room).emit('player-destroyed', message);
+  });
+
   socket.on('disconnect', () => {
     console.log(room + ' had a lost connection');
     io.to(room).emit('connection-lost');

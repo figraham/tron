@@ -6,7 +6,8 @@ import {
   CharacterSet,
   Vector2,
   random,
-  OutputTerminal
+  OutputTerminal,
+  getIndex
 } from 'terminaltxt';
 import io from 'socket.io-client';
 import { LightCycle } from './LightCycle';
@@ -40,7 +41,7 @@ function init(): void {
       height: HEIGHT,
       container: document.getElementById('game-container'),
     } as TerminalConfig,
-    new CharacterSet(' ─│┌┐└┘║═╔╗╚╝')
+    new CharacterSet(' █─│┌┐└┘║═╔╗╚╝')
   );
   gameVisibility(false);
   border();
@@ -94,7 +95,7 @@ function stopGame() {
 }
 
 function update(): void {
-  cycle.checkDestroyed(term);
+  cycle.checkDestroyed(term, emitDestroyed);
   cycle.nextMove(emitMove);
   if (lost) { stopGame(); }
 }
@@ -141,6 +142,33 @@ function setupSocket(): void {
       term.setCellColor(message.color, message.x, message.y);
     }
   });
+  socket.on('player-destroyed', (message) => {
+    if (ready[2]) {
+      for (let xOff: number = -2; xOff <= 2; xOff++) {
+        for (let yOff: number = -2; yOff <= 2; yOff++) {
+          let x = message.x + xOff;
+          let y = message.y + yOff;
+          let dist = Math.sqrt(xOff * xOff + yOff * yOff);
+          console.log(dist * 10);
+          setTimeout(() => {
+            // @ts-ignore
+            if (term.cellData.getCell(getIndex(x, y, term.cellData)) >= 0 && term.cellData.getCell(getIndex(x, y, term.cellData)) <= 7) { // TODO remove hard coded values
+              term.setCell('█', x, y);
+              term.update();
+              term.setCellColor('white', x, y);
+            }
+          }, dist * 20)
+          setTimeout(() => {
+            // @ts-ignore
+            if (term.cellData.getCell(getIndex(x, y, term.cellData)) >= 0 && term.cellData.getCell(getIndex(x, y, term.cellData)) <= 7) { // TODO remove hard coded values
+              term.setCell(' ', x, y);
+              term.update();
+            }
+          }, dist * 40)
+        }
+      }
+    }
+  });
 }
 
 function startTime(timeToStart: number): void {
@@ -162,6 +190,13 @@ function emitMove(character: string, x: number, y: number) {
     y: y,
     color: playerColor,
   })
+}
+
+function emitDestroyed(x: number, y: number): void {
+  socket.emit('destroyed', {
+    x: x,
+    y: y,
+  });
 }
 
 function border() {

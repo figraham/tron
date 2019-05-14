@@ -21,6 +21,9 @@ io.sockets.on('connection', function (socket) {
     socket.on('move', function (message) {
         io.to(room).emit('player-move', message);
     });
+    socket.on('destroyed', function (message) {
+        io.to(room).emit('player-destroyed', message);
+    });
     socket.on('disconnect', function () {
         console.log(room + ' had a lost connection');
         io.to(room).emit('connection-lost');

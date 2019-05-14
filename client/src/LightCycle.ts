@@ -67,7 +67,8 @@ export class LightCycle {
     }
   }
 
-  public checkDestroyed(term: GraphicsTerminal): void {
+  public checkDestroyed(term: GraphicsTerminal, whenDestroyed: Function): void {
+    if (this.destroyed) { return; }
     if (
       this.position.x <= 0                ||
       this.position.y <= 0                ||
@@ -75,10 +76,12 @@ export class LightCycle {
       this.position.y >= term.getHeight()
     ) {
       this.destroyed = true;
+      whenDestroyed(this.position.x, this.position.y);
     }
     // @ts-ignore
     if (term.cellData.getCell(getIndex(this.position.x, this.position.y, term.cellController)) !== 0) {
       this.destroyed = true;
+      whenDestroyed(this.position.x, this.position.y);
     }
   }
 
